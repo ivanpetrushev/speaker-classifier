@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow.keras as keras
 from pprint import pprint
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 
 EXTRACTED_FILE = "extracted.json"
@@ -91,7 +92,6 @@ if __name__ == '__main__':
     print("Fitting model...")
     history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=100)
 
-    print('history', history)
     # Plot training & validation accuracy values
     plt.plot(history.history['acc'])
     plt.plot(history.history['val_acc'])
@@ -109,3 +109,9 @@ if __name__ == '__main__':
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.show()
+
+    # save model
+    now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    model_filename = 'model-' + now + '.h5'
+    model.save(model_filename)
+    print("Model saved to: ", model_filename)
