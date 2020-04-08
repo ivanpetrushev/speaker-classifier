@@ -6,7 +6,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-EXTRACTED_FILE = "daily-2020-04-03-extracted.json"
+EXTRACTED_FILE = "extracted.json"
 
 
 def load_extract():
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         keras.layers.Dense(64, activation='relu'),
         keras.layers.Dropout(0.3),
         # output layer
-        keras.layers.Dense(10, activation='softmax')
+        keras.layers.Dense(bins, activation='softmax')
     ])
 
     optimiser = keras.optimizers.Adam(learning_rate=0.0001)

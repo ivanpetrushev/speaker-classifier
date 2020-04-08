@@ -6,9 +6,8 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 # go with WAV instead of MP3 for speed
-AUDIO_FILE = "daily-2020-04-03.wav"
-CLASSIFICATION_FILE = "daily-2020-04-03.json"
-EXTRACTED_FILE = "daily-2020-04-03-extracted.json"
+CLASSIFICATION_SETS = ["daily-2020-04-03", "daily-2020-04-04"]
+EXTRACTED_FILE = "extracted.json"
 SEGMENT_LENGTH = 3
 MIN_NUMBER_OF_SEGMENTS_PER_TAG = 50
 
@@ -19,10 +18,17 @@ def save_mfcc():
         'labels': [],
         'mfcc': []
     }
+    classified_data = []
 
     # load previously classified data file
-    with open(CLASSIFICATION_FILE, 'r') as file:
-        classified_data = json.load(file)
+    for classification_set in CLASSIFICATION_SETS:
+        filename = classification_set + '.json'
+        print("Loading set: ", filename)
+        with open(filename, 'r') as file:
+            current_classified_data = json.load(file)
+        for i, item in enumerate(current_classified_data):
+            current_classified_data[i]['set'] = classification_set
+        classified_data = classified_data + current_classified_data
 
     data_by_tag = {}
 
@@ -49,7 +55,8 @@ def save_mfcc():
             data_by_tag[tag]['total_duration'] += SEGMENT_LENGTH
             data_by_tag[tag]['segments'].append({
                 'offset': offset,
-                'duration': SEGMENT_LENGTH
+                'duration': SEGMENT_LENGTH,
+                'set': item['set']
             })
             offset += SEGMENT_LENGTH
 
@@ -67,7 +74,8 @@ def save_mfcc():
         print('Processing tag: {}'.format(tag))
         for j, segment in enumerate(data_by_tag[tag]['segments']):
             print('Tag {}, segment {}/{}'.format(i, j, len(data_by_tag[tag]['segments'])))
-            y, sr = librosa.load(AUDIO_FILE, offset=segment['offset'], duration=SEGMENT_LENGTH)
+            audio_filename = segment['set'] + '.wav'
+            y, sr = librosa.load(audio_filename, offset=segment['offset'], duration=SEGMENT_LENGTH)
             mfccs = librosa.feature.mfcc(y, n_mfcc=13, n_fft=512, hop_length=2048)
             data['mfcc'].append(mfccs.tolist())
             data['labels'].append(i)
