@@ -1,6 +1,7 @@
 import json
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 import tensorflow.keras as keras
 from pprint import pprint
 import matplotlib.pyplot as plt
@@ -16,26 +17,68 @@ def load_extract():
 
     x = np.array(data['mfcc'])
     y = np.array(data['labels'])
-    return x, y
+    return x, y, data['mapping']
+
+
+# source: https://gist.github.com/zachguo/10296432#gistcomment-2638135
+def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):
+    """pretty print for confusion matrixes"""
+    columnwidth = max([len(x) for x in labels] + [5])  # 5 is value length
+    empty_cell = " " * columnwidth
+
+    # Begin CHANGES
+    fst_empty_cell = (columnwidth-3)//2 * " " + "t/p" + (columnwidth-3)//2 * " "
+
+    if len(fst_empty_cell) < len(empty_cell):
+        fst_empty_cell = " " * (len(empty_cell) - len(fst_empty_cell)) + fst_empty_cell
+    # Print header
+    print("    " + fst_empty_cell, end=" ")
+    # End CHANGES
+
+    for label in labels:
+        print("%{0}s".format(columnwidth) % label, end=" ")
+
+    print()
+    # Print rows
+    for i, label1 in enumerate(labels):
+        print("    %{0}s".format(columnwidth) % label1, end=" ")
+        for j in range(len(labels)):
+            cell = "%{0}.1f".format(columnwidth) % cm[i, j]
+            if hide_zeroes:
+                cell = cell if float(cm[i, j]) != 0 else empty_cell
+            if hide_diagonal:
+                cell = cell if i != j else empty_cell
+            if hide_threshold:
+                cell = cell if cm[i, j] > hide_threshold else empty_cell
+            print(cell, end=" ")
+        print()
 
 
 if __name__ == '__main__':
-    x, y = load_extract()
+    x, y, mapping = load_extract()
+
+    # divide train, test and predict sets
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-    print('Train label counts:')
+    print('Train set count:')
     bins = np.amax(y_train) + 1
     hist_train, _ = np.histogram(y_train, bins=bins)
     pprint(hist_train)
 
-    print('Test label counts:')
+    x_test, x_predict, y_test, y_predict = train_test_split(x_test, y_test, test_size=0.5)
+
+    print('Test set count:')
     hist_test, _ = np.histogram(y_test, bins=bins)
     pprint(hist_test)
-    print('Total label counts:')
-    hist_total = np.sum([hist_train, hist_test], axis=0)
+
+    print('Predict set count:')
+    hist_predict, _ = np.histogram(y_predict, bins=bins)
+    pprint(hist_predict)
+
+    print('Total set count:')
+    hist_total = np.sum([hist_train, hist_test, hist_predict], axis=0)
     pprint(hist_total)
 
-    # NN topology
-    print('shape', x.shape[1], x.shape[2])
+    # NN topology - trying different models
 
     # initial model
     # model = keras.Sequential([
@@ -90,28 +133,58 @@ if __name__ == '__main__':
     model.summary()
 
     print("Fitting model...")
-    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=100)
+    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=50)
 
     # Plot training & validation accuracy values
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    # plt.plot(history.history['acc'])
+    # plt.plot(history.history['val_acc'])
+    # plt.title('Model accuracy')
+    # plt.ylabel('Accuracy')
+    # plt.xlabel('Epoch')
+    # plt.legend(['Train', 'Test'], loc='upper left')
+    # plt.show()
+    #
+    # # Plot training & validation loss values
+    # plt.plot(history.history['loss'])
+    # plt.plot(history.history['val_loss'])
+    # plt.title('Model loss')
+    # plt.ylabel('Loss')
+    # plt.xlabel('Epoch')
+    # plt.legend(['Train', 'Test'], loc='upper left')
+    # plt.show()
 
-    # Plot training & validation loss values
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    # generate confusion matrix
+    print("Generating confusion matrix")
+    y_confusion = []
+    y_predict = y_predict.tolist()
+    for i, idx in enumerate(y_predict):
+        y_predict[i] = mapping[idx]
+    for x_item in x_predict:
+        x_item = x_item[..., np.newaxis]
+        x_item = x_item[np.newaxis, ...]
+        prediction = model.predict(x_item)
+        prediction = prediction[0]
+        selected_idx = np.argmax(prediction)
+        selected_tag = mapping[selected_idx]
+        y_confusion.append(selected_tag)
+    matrix = confusion_matrix(y_predict, y_confusion, labels=mapping)
+    pprint(matrix)
+
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # cax = ax.matshow(matrix)
+    # plt.title('Confusion matrix of the classifier')
+    # fig.colorbar(cax)
+    # ax.set_xticklabels([''] + mapping)
+    # ax.set_yticklabels([''] + mapping)
+    # plt.xlabel('Predicted')
+    # plt.ylabel('True')
+    # plt.show()
+
+    print_cm(matrix, mapping)
 
     # save model
-    now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    model_filename = 'model-' + now + '.h5'
+    now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    model_filename = 'data/model-' + now + '.h5'
     model.save(model_filename)
     print("Model saved to: ", model_filename)
