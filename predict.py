@@ -8,7 +8,7 @@ import json
 from subprocess import run
 
 SEGMENT_LENGTH = 3
-EXTRACTED_FILE = "extracted.json"
+EXTRACTED_FILE = "data/extracted.json"
 
 model_filename = sys.argv[1]
 audio_filename = sys.argv[2]
