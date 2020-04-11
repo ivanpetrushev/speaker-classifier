@@ -1,12 +1,13 @@
 import librosa
 import librosa.display
 import os
+import sys
 import json
 from pprint import pprint, pformat
 import matplotlib.pyplot as plt
 
 # go with WAV instead of MP3 for speed
-CLASSIFICATION_SETS = ["daily-2020-04-03", "daily-2020-04-04", "daily-2020-04-05", "daily-2020-04-06"]
+CLASSIFICATION_SETS = ["daily-2020-04-03", "daily-2020-04-04", "daily-2020-04-05", "daily-2020-04-06", "daily-2020-04-08", "daily-2020-04-09"]
 EXTRACTED_FILE = "extracted.json"
 SEGMENT_LENGTH = 3
 MIN_NUMBER_OF_SEGMENTS_PER_TAG = 100
@@ -79,6 +80,9 @@ def save_mfcc():
             del data_by_tag[tag]
 
     print('Tags survived culling:', list(data_by_tag))
+
+    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+        quit()
 
     for i, tag in enumerate(data_by_tag):
         data['mapping'].append(tag)

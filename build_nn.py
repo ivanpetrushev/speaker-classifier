@@ -133,7 +133,7 @@ if __name__ == '__main__':
     model.summary()
 
     print("Fitting model...")
-    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=50)
+    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), batch_size=32, epochs=75)
 
     # Plot training & validation accuracy values
     # plt.plot(history.history['acc'])
